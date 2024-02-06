@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/mrson/ros2_ws/install/serial/include/**",
+        "/home/mrson/ros2_ws/install/innobot_msgs/include/**",
+        "/home/mrson/ros2_ws/install/innobot_control_hardware/include/**",
+        "/home/mrson/yolobot/install/yolov8_msgs/include/**",
+        "/opt/ros/foxy/include/**",
+        "/home/mrson/ros2_ws/src/arduinobot_controller/include/**",
+        "/home/mrson/ros2_ws/src/articubot_moveit/include/**",
+        "/home/mrson/ros2_ws/src/diffdrive_arduino/include/**",
+        "/home/mrson/ros2_ws/src/innobot/src/innobot_control/innobot_control_hardware/include/**",
+        "/home/mrson/ros2_ws/src/ldlidar_stl_ros2/include/**",
+        "/home/mrson/ros2_ws/src/serial/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-arm64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

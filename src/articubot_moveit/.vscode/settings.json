@@ -1,0 +1,11 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/mrson/ros2_ws/install/joy_tester/lib/python3.8/site-packages",
+        "/home/mrson/ros2_ws/install/innobot_bringup/lib/python3.8/site-packages",
+        "/home/mrson/ros2_ws/install/innobot_core/lib/python3.8/site-packages",
+        "/home/mrson/ros2_ws/install/innobot_msgs/lib/python3.8/site-packages",
+        "/home/mrson/ros2_ws/install/ball_tracker/lib/python3.8/site-packages",
+        "/home/mrson/yolobot/install/yolov8_msgs/lib/python3.8/site-packages",
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ]
+}
