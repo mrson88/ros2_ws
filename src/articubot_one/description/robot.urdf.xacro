@@ -20,5 +20,9 @@
     <!-- <xacro:include filename="depth_camera.xacro" /> -->
 
     <xacro:include filename="face.xacro" />
-
+    <joint name="mobile_base_arm_joint" type="fixed">
+        <parent link="chassis" />
+        <child link="arm_base_link" />
+        <origin xyz="${8*chassis_length / 9.0} 0 ${chassis_height}" rpy="0 0 0" />
+    </joint>
 </robot>

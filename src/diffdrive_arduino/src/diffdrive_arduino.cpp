@@ -45,9 +45,9 @@ return_type DiffDriveArduino::configure(const hardware_interface::HardwareInfo &
   position_states_.reserve(info_.joints.size());
   prev_position_commands_.reserve(info_.joints.size());
   joint_name_={"arm_base_forearm_joint","forearm_hand_1_joint","forearm_hand_2_joint","forearm_hand_3_joint","forearm_claw_joint","joint_4"};
-  position_commands_ = { 0.0, 0.0, 0.0, 0.0 ,0.0, 0.0, };
-  prev_position_commands_ = { 0.0, 0.0, 0.0, 0.0 ,0.0, 0.0, };
-  position_states_ = { 0.0, 0.0, 0.0, 0.0 ,0.0, 0.0, };
+  position_commands_ = { 0.0, -1.2, -1.2, -1.2 ,0.0, 0.0, };
+  prev_position_commands_ = {  0.0, -1.2, -1.2, -1.2 ,0.0, 0.0,};
+  position_states_ = {  0.0, -1.2, -1.2, -1.2 ,0.0, 0.0, };
   RCLCPP_INFO(logger_, "Finished Configuration");
 
 
@@ -173,9 +173,12 @@ hardware_interface::return_type DiffDriveArduino::read()
   pos_prev = r_wheel_.pos;
   r_wheel_.pos = r_wheel_.calcEncAngle();
   r_wheel_.vel = (r_wheel_.pos - pos_prev) / deltaSeconds;
+  // for (size_t i = 0; i < position_states_.size(); i++){
 
+  //   arduino_.getServoPosition(i);
+  // }
   position_states_ = position_commands_;
-
+  prev_position_commands_ = position_commands_;
   return return_type::OK;
 
   
@@ -199,6 +202,7 @@ std::string msg;
 
   try
   {
+    arduino_.setMotorValues(l_wheel_.cmd / l_wheel_.rads_per_count / cfg_.loop_rate, r_wheel_.cmd / r_wheel_.rads_per_count / cfg_.loop_rate);
     
     // arduino_.setMotorValues(l_wheel_.cmd / l_wheel_.rads_per_count / cfg_.loop_rate, r_wheel_.cmd / r_wheel_.rads_per_count / cfg_.loop_rate);
     for (size_t i = 0; i < position_commands_.size(); i++){
@@ -209,7 +213,8 @@ std::string msg;
       arduino_.setServoPosition(i,pos);
       // RCLCPP_INFO_STREAM(rclcpp::get_logger("ArduinobotInterface"), "Sending new command " << pos);
     }
-    
+    position_states_ = position_commands_;
+    prev_position_commands_ = position_commands_;
   }
   catch (...)
   {
@@ -217,7 +222,6 @@ std::string msg;
     return hardware_interface::return_type::ERROR;
   }
 
-  prev_position_commands_ = position_commands_;
 
 
 

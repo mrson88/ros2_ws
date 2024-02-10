@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(yolobot_recognition)
+project(articubot_recognition)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -44,6 +44,7 @@ install(
   PROGRAMS
   scripts/yolov8_ros2_pt.py
   scripts/yolov8_ros2_subscriber.py
+  scripts/yolo_ros2_depth_test.py
   launch/launch_yolov8.launch.py
   DESTINATION lib/${PROJECT_NAME}
 )

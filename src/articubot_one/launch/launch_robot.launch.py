@@ -14,6 +14,7 @@ from launch_ros.actions import Node
 
 
 
+
 def generate_launch_description():
 
 
@@ -83,8 +84,8 @@ def generate_launch_description():
             output='screen',
 
     )
-    yolo_regonition=IncludeLaunchDescription(os.path.join(
-        get_package_share_directory("yolobot_recognition"),
+    articubot_recognition=IncludeLaunchDescription(os.path.join(
+        get_package_share_directory("articubot_recognition"),
         "launch",
         "launch_yolov8.launch.py"
     ))
@@ -186,7 +187,12 @@ def generate_launch_description():
         #     ('/joint_states', '/joint_commands'),
         # ]
     )
+
+
     # Launch them all!
+
+
+
     return LaunchDescription([
         rsp,
         # joint_state_publisher_gui_node,
@@ -194,7 +200,7 @@ def generate_launch_description():
         moveit,
         ldlidar_node,
         # camera_node,
-        # camera_realsense_node,
+        camera_realsense_node,
         # rviz,
         twist_mux,
         delayed_controller_manager,
@@ -204,5 +210,5 @@ def generate_launch_description():
         delayed_gripper_spawner,
         slam_toolbox,
         # navigation_robot,
-        # yolo_regonition,
+        articubot_recognition,
     ])

@@ -16,6 +16,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/Fibonacci.action"
   "action/ArduinobotTask.action"
   "action/Home.action"
+  "msg/InferenceResult.msg"
+  "msg/Yolov8Inference.msg"
+  DEPENDENCIES std_msgs
 )
 
 ament_package()

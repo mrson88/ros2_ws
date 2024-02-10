@@ -29,7 +29,7 @@ public:
   : Node("gripper_controller", options)
   {
     using namespace std::placeholders;
-
+    RCLCPP_INFO(get_logger(), "Starting the Gripper Server");
     this->gripper_move_server_ = rclcpp_action::create_server<GripperCommand>(
       this,
       "~/gripper_action",
@@ -44,7 +44,7 @@ public:
       std::bind(&GripperActionServer::handle_home_cancel, this, _1),
       std::bind(&GripperActionServer::handle_home_accepted, this, _1));
 
-    this->gripper_command_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/gripper_position_controller/commands", 10);
+    this->gripper_command_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("/gripper_controller/commands", 10);
 
     
   }
@@ -90,7 +90,7 @@ private:
     const std::shared_ptr<GoalHandleHome> home_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Received request to cangel home goal"); 
-    (void)home_handle; 
+    (void)home_handle;
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
