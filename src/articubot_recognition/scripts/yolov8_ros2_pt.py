@@ -23,6 +23,10 @@ class Camera_subscriber(Node):
     def __init__(self):
         super().__init__('camera_subscriber')
 
+        self.pixel_x = 0
+        self.pixel_y = 0
+        self.depth_image=[]
+        self.depth_value = 0
         self.model = YOLO('~/ros2_ws/src/yolobot_recognition/scripts/yolov8n.pt')
 
         self.yolov8_inference = Yolov8Inference()
@@ -35,20 +39,18 @@ class Camera_subscriber(Node):
         self.subscription 
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
 
-        # self.subscription_depth = self.create_subscription(
-        #     Point,
-        #     'depth/image_rect_raw',
-        #     self.depth_camera_callback,
-        #     10)
-        # self.subscription_depth
+        self.subscription_depth = self.create_subscription(
+            Image,
+            'depth/image_rect_raw',
+            self.depth_camera_callback,
+            10)
+        self.subscription_depth
         # self.yolov8_pub = self.create_publisher(Yolov8Inference, "/Yolov8_Inference", 1)
         self.img_pub = self.create_publisher(Image, "/inference_result", 1)
 
     def camera_callback(self, data):
         msg = Twist()
-
         img = bridge.imgmsg_to_cv2(data, "bgr8")
-        # depth_image = bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
         time1 = time.time()
         results = self.model(img)
 
@@ -62,9 +64,16 @@ class Camera_subscriber(Node):
                 b = box.xyxy[0].to('cpu').detach().numpy().copy()  # get box coordinates in (top, left, bottom, right) format
                 c = box.cls
                 self.inference_result.class_name = self.model.names[int(c)]
+                
                 if self.inference_result.class_name=="person":
-                    msg.angular.z=0.2
-                msg.linear.x=0.1
+                    self.get_logger().info(f"move robot")
+                    # msg.angular.z=0.2
+                    # msg.linear.x=0.1
+                    self.get_logger().info(f"class_name %= {self.inference_result.class_name}")
+                    
+                    
+                # msg.linear.x=0.1
+                # self.get_logger().info(f"class_name {self.inference_result.class_name}")
 
                 
 
@@ -72,16 +81,18 @@ class Camera_subscriber(Node):
                 self.inference_result.left = int(b[1])
                 self.inference_result.bottom = int(b[2])
                 self.inference_result.right = int(b[3])
-                self.pixel_x = int((self.inference_result.top+self.inference_result.right)/2)
-                self.pixel_y = int((self.inference_result.bottom+self.inference_result.left)/2)
+                self.pixel_x = int((self.inference_result.top+self.inference_result.bottom)/2)
+                self.pixel_y = int((self.inference_result.right+self.inference_result.left)/2)
                 self.yolov8_inference.yolov8_inference.append(self.inference_result)
-
-                # self.depth_value = depth_image[self.pixel_y, self.pixel_x]
-                # cv2.putText(img, text = f"{round(self.depth_value,2)}", org=(int(self.inference_result.top), int(self.inference_result.left)+30),
-                #         fontFace = cv2.FONT_HERSHEY_SIMPLEX, fontScale = 0.7, color = (0, 0, 255),
-                #         thickness = 2, lineType=cv2.LINE_4)
+                if len(self.depth_image)!=0:
+                    self.depth_value = self.depth_image[self.pixel_y, self.pixel_x]
+                
+                cv2.putText(img, text = f"kc: {round(self.depth_value,3)}", org=(int(self.inference_result.top), int(self.inference_result.left)+30),
+                        fontFace = cv2.FONT_HERSHEY_SIMPLEX, fontScale = 0.5, color = (0, 255, 0),
+                        thickness = 1, lineType=cv2.LINE_4)
 
             #camera_subscriber.get_logger().info(f"{self.yolov8_inference}")
+        self.publisher_.publish(msg)
 
         annotated_frame = results[0].plot()
         
@@ -89,19 +100,18 @@ class Camera_subscriber(Node):
         time2 = time.time()
         text_fps=f"FPS : {int(1/(time2-time1))}"
         cv2.putText(annotated_frame, text = text_fps, org=(10,20),
-            fontFace = cv2.FONT_HERSHEY_SIMPLEX, fontScale = 0.7, color = (0, 0, 255),
-            thickness = 2, lineType=cv2.LINE_4)
+            fontFace = cv2.FONT_HERSHEY_SIMPLEX, fontScale = 0.5, color = (0, 0, 255),
+            thickness = 1, lineType=cv2.LINE_4)
         img_msg = bridge.cv2_to_imgmsg(annotated_frame)  
         self.img_pub.publish(img_msg)
         # self.yolov8_pub.publish(self.yolov8_inference)
         self.yolov8_inference.yolov8_inference.clear()
 
 
-    # def depth_camera_callback(self,data : Point):
-    #     self.depth_image = bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
-    #     self.depth_value = self.depth_image[self.pixel_y, self.pixel_x]
-    #     camera_subscriber.get_logger().info(f"{self.depth_value}")
-    #     return self.depth_value
+    def depth_camera_callback(self,data):
+        self.depth_image = bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
+        # self.depth_value = self.depth_image[self.pixel_y, self.pixel_x]
+        # self.get_logger().info(f"Depth value at depth {self.depth_value}")
         
 if __name__ == '__main__':
     rclpy.init(args=None)

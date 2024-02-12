@@ -22,9 +22,13 @@ find_package(sensor_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rclcpp_action REQUIRED)
-# find_package(innobot_msgs REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 find_package(arduinobot_msgs REQUIRED)
+find_package(ament_cmake REQUIRED)
+
+
 add_executable(action_server src/gripper_action_server.cpp)
+# add_executable(action_server1 src/arm_action_server.cpp)
 
 ament_target_dependencies(action_server
   "rclcpp"
@@ -32,7 +36,8 @@ ament_target_dependencies(action_server
   "control_msgs"
   "sensor_msgs"
   "std_msgs"
-  "arduinobot_msgs")
+  "arduinobot_msgs"
+  "trajectory_msgs")
 
 target_include_directories(action_server PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -47,6 +52,23 @@ install(TARGETS action_server
 #  DIRECTORY include/
 #  DESTINATION include
 #)
+# ament_target_dependencies(action_server1
+#   "rclcpp"
+#   "rclcpp_action"
+#   "control_msgs"
+#   "sensor_msgs"
+#   "std_msgs"
+#   "arduinobot_msgs"
+#   "trajectory_msgs"
+#   )
+# target_include_directories(action_server1 PRIVATE
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     $<INSTALL_INTERFACE:include>)
+
+
+# install(TARGETS action_server1
+# DESTINATION lib/${PROJECT_NAME})
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

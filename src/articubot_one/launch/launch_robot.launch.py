@@ -198,7 +198,7 @@ def generate_launch_description():
         # joint_state_publisher_gui_node,
         # joystick,
         moveit,
-        ldlidar_node,
+        # ldlidar_node,
         # camera_node,
         camera_realsense_node,
         # rviz,
@@ -208,7 +208,7 @@ def generate_launch_description():
         delayed_joint_broad_spawner,
         delayed_arm_spawner,
         delayed_gripper_spawner,
-        slam_toolbox,
+        # slam_toolbox,
         # navigation_robot,
         articubot_recognition,
     ])
