@@ -200,7 +200,7 @@ def generate_launch_description():
         moveit,
         # ldlidar_node,
         # camera_node,
-        camera_realsense_node,
+        # camera_realsense_node,
         # rviz,
         twist_mux,
         delayed_controller_manager,
@@ -210,5 +210,6 @@ def generate_launch_description():
         delayed_gripper_spawner,
         # slam_toolbox,
         # navigation_robot,
-        articubot_recognition,
+        # articubot_recognition,
+ 
     ])
