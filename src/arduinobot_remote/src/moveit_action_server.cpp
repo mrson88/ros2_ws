@@ -1,64 +1,124 @@
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_action/rclcpp_action.hpp"
-#include "moveit/move_group_interface/move_group_interface.h"
-#include "moveit_msgs/action/move_group.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
+#include "arduinobot_msgs/action/arduinobot_task.hpp"
+#include <moveit/move_group_interface/move_group_interface.h>
+
+#include <memory>
+
 
 using namespace std::placeholders;
 
+namespace arduinobot_remote
+{
 class MoveRobotActionServer : public rclcpp::Node
 {
 public:
-    using MoveGroup = moveit::planning_interface::MoveGroupInterface;
-    using GoalHandleMoveRobot = rclcpp_action::ServerGoalHandle<moveit_msgs::action::MoveGroup>;
-
-    MoveRobotActionServer()
-        : Node("move_robot_action_server"),
-          action_server_(rclcpp_action::create_server<moveit_msgs::action::MoveGroup>(
-              this, "move_robot", std::bind(&MoveRobotActionServer::handle_goal, this, _1, _2),
-              std::bind(&MoveRobotActionServer::handle_cancel, this, _1),
-              std::bind(&MoveRobotActionServer::handle_accepted, this, _1)))
-    {
-        move_group_ = std::make_shared<MoveGroup>("arm"); // Specify the planning group name
-    }
+  explicit MoveRobotActionServer(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
+    : Node("moveit_action_server", options)
+  {
+    RCLCPP_INFO(get_logger(), "Starting the Server");
+    action_server_ = rclcpp_action::create_server<arduinobot_msgs::action::ArduinobotTask>(
+        this, "moveit_action_server", std::bind(&MoveRobotActionServer::goalCallback, this, _1, _2),
+        std::bind(&MoveRobotActionServer::cancelCallback, this, _1),
+        std::bind(&MoveRobotActionServer::acceptedCallback, this, _1));
+  }
 
 private:
-    rclcpp_action::Server<moveit_msgs::action::MoveGroup>::SharedPtr action_server_;
-    std::shared_ptr<MoveGroup> move_group_;
+  rclcpp_action::Server<arduinobot_msgs::action::ArduinobotTask>::SharedPtr action_server_;
 
-    void handle_goal(const std::shared_ptr<GoalHandleMoveRobot> goal_handle)
+  rclcpp_action::GoalResponse goalCallback(
+      const rclcpp_action::GoalUUID& uuid,
+      std::shared_ptr<const arduinobot_msgs::action::ArduinobotTask::Goal> goal)
+  {
+    RCLCPP_INFO(get_logger(), "Received goal request with id %d", goal->task_number);
+    (void)uuid;
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
+
+  rclcpp_action::CancelResponse cancelCallback(
+      const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  {
+    (void)goal_handle;
+    RCLCPP_INFO(get_logger(), "Received request to cancel goal");
+    auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm");
+    auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
+    arm_move_group.stop();
+    gripper_move_group.stop();
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
+
+  void acceptedCallback(
+      const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  {
+    // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+    std::thread{ std::bind(&MoveRobotActionServer::execute, this, _1), goal_handle }.detach();
+  }
+
+  void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  {
+    RCLCPP_INFO(get_logger(), "Executing goal");
+    auto result = std::make_shared<arduinobot_msgs::action::ArduinobotTask::Result>();
+
+    // MoveIt 2 Interface
+    auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm");
+    auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
+
+    std::vector<double> arm_joint_goal;
+    std::vector<double> gripper_joint_goal;
+
+    if (goal_handle->get_goal()->task_number == 0)
     {
-        auto goal = goal_handle->get_goal();
-
-        move_group_->setPoseTarget(goal->target_pose);
-        moveit::planning_interface::MoveItErrorCode error_code = move_group_->move();
-
-        if (error_code == moveit::planning_interface::MoveItErrorCode::SUCCESS)
-        {
-            goal_handle->succeed(std::make_shared<moveit_msgs::action::MoveGroup::Result>());
-        }
-        else
-        {
-            goal_handle->abort();
-        }
+      arm_joint_goal = {0.0, 0.0, 0.0,0,0};
+      gripper_joint_goal = {-0.7, 0.7};
+    }
+    else if (goal_handle->get_goal()->task_number == 1)
+    {
+      arm_joint_goal = {0, -1.2,-1.2,-1.2, 0};
+      gripper_joint_goal = {0.0, 0.0};
+    }
+    else if (goal_handle->get_goal()->task_number == 2)
+    {
+      arm_joint_goal = {-0.5,-1.2,-1.2,-1.2, 1};
+      gripper_joint_goal = {0.0, 0.0};
+    }
+    else
+    {
+      RCLCPP_ERROR(get_logger(), "Invalid Task Number");
+      return;
     }
 
-    void handle_cancel(const std::shared_ptr<GoalHandleMoveRobot> goal_handle)
+    bool arm_within_bounds = arm_move_group.setJointValueTarget(arm_joint_goal);
+    bool gripper_within_bounds = gripper_move_group.setJointValueTarget(gripper_joint_goal);
+    if (!arm_within_bounds | !gripper_within_bounds)
     {
-        RCLCPP_INFO(get_logger(), "Received request to cancel goal");
-        goal_handle->canceled(std::make_shared<moveit_msgs::action::MoveGroup::Result>());
+      RCLCPP_WARN(get_logger(),
+                  "Target joint position(s) were outside of limits, but we will plan and clamp to the limits ");
+      return;
     }
 
-    void handle_accepted(const std::shared_ptr<GoalHandleMoveRobot> goal_handle)
+    moveit::planning_interface::MoveGroupInterface::Plan arm_plan;
+    moveit::planning_interface::MoveGroupInterface::Plan gripper_plan;
+    bool arm_plan_success = (arm_move_group.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    bool gripper_plan_success = (gripper_move_group.plan(gripper_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    
+    if(arm_plan_success && gripper_plan_success)
     {
-        (void)goal_handle;
+      RCLCPP_INFO(get_logger(), "Planner SUCCEED, moving the arme and the gripper");
+      arm_move_group.move();
+      gripper_move_group.move();
     }
+    else
+    {
+      RCLCPP_ERROR(get_logger(), "One or more planners failed!");
+      return;
+    }
+  
+    result->success = true;
+    goal_handle->succeed(result);
+    RCLCPP_INFO(get_logger(), "Goal succeeded");
+  }
 };
+}  // namespace arduinobot_remote
 
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<MoveRobotActionServer>();
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
-}
+RCLCPP_COMPONENTS_REGISTER_NODE(arduinobot_remote::MoveRobotActionServer)

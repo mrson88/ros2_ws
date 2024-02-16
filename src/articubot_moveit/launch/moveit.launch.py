@@ -48,9 +48,6 @@ def generate_launch_description():
     robot_description_semantic = load_file(srdf_file)
     kinematics_config = load_yaml(kinematics_file)
     ompl_config = load_yaml(ompl_config_file)
-    moveit_cpp_pnp_yaml_file_name = (
-        get_package_share_directory("innobot_moveit_config") + "/config/moveit_cpp_pnp.yaml"
-    )
     moveit_controllers = {
         'moveit_simple_controller_manager' : load_yaml(moveit_controllers_file),
         'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager'
@@ -89,7 +86,7 @@ def generate_launch_description():
             planning_scene_monitor_config,
         ],
         arguments=["--ros-args", "--log-level", "info"],
-        remappings=[('/robot_description','/arm_robot')]
+        # remappings=[('/robot_description','/arm_robot')]
     )
 
     # Visualization (parameters needed for MoveIt display plugin)
@@ -125,7 +122,7 @@ def generate_launch_description():
                     'robot_description_kinematics': kinematics_config,
                     # 'robot_description_planning' : joint_limits_config,
                     'planning_pipelines': ['ompl'],
-                    # 'ompl': ompl_config
+                    'ompl': ompl_config,
                     'robot_description': robot_description,
                 },
                 # moveit_cpp_config,

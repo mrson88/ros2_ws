@@ -214,6 +214,7 @@
         <limit lower="${-pi/2}" upper="${pi/2}" effort="100" velocity="100" />
         <dynamics friction="0.05" damping="0.1" />
     </joint>
+
     <joint name ="joint_4" type="revolute">
         <parent link="claw_support"/>
         <child link = "gripper_right"/>
@@ -222,7 +223,6 @@
         <limit lower="-${PI / 2}" upper="0.0" 
                effort="100" velocity="100"/>
     </joint>
-
     <joint name ="joint_5" type="revolute">
         <parent link="claw_support"/>
         <child link = "gripper_left"/>
