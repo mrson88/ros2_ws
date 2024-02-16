@@ -111,8 +111,8 @@ def generate_launch_description():
         
     )
     arm_pnp_as = Node(
-            name='innobot_node',
-            package='arduinobot_remote',
+            name='articubot_node',
+            package='articubot_remote',
             executable='task_server_node',
             output='screen',
             parameters=[
@@ -123,31 +123,6 @@ def generate_launch_description():
                     # 'robot_description_planning' : joint_limits_config,
                     'planning_pipelines': ['ompl'],
                     'ompl': ompl_config,
-                    'robot_description': robot_description,
-                },
-                # moveit_cpp_config,
-                # ompl_planning_pipeline_config,
-                
-                # moveit_cpp_pnp_yaml_file_name,
-                moveit_controllers,
-                trajectory_execution,
-                planning_scene_monitor_config,
-            ],
-            # condition=IfCondition(use_pnp)
-        )
-    arm_pnp_as_1 = Node(
-            name='innobot_node',
-            package='innobot_core',
-            executable='innobot_node',
-            output='screen',
-            parameters=[
-                {
-                    'base_frame': 'odom',
-                    'robot_description_semantic': robot_description_semantic,
-                    'robot_description_kinematics': kinematics_config,
-                    # 'robot_description_planning' : joint_limits_config,
-                    'planning_pipelines': ['ompl'],
-                    # 'ompl': ompl_config
                     'robot_description': robot_description,
                 },
                 # moveit_cpp_config,

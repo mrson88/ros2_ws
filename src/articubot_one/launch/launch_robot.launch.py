@@ -67,17 +67,7 @@ def generate_launch_description():
           '/launch/ld06.launch.py'
       ])
   )
-    camera_node=Node(
-            package='usb_cam',
-            executable='usb_cam_node_exe',
-            output='screen',
-            namespace='camera',
-            parameters=[{
-                'image_size': [640,480],
-                'time_per_frame': [1, 6],
-                'camera_frame_id': 'camera_link_optical'
-                }]
-    )
+
     camera_realsense_node=Node(
             package='realsense2_camera',
             executable='realsense2_camera_node',
@@ -199,7 +189,6 @@ def generate_launch_description():
         # joystick,
         moveit,
         # ldlidar_node,
-        # camera_node,
         # camera_realsense_node,
         # rviz,
         twist_mux,

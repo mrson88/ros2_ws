@@ -13,7 +13,7 @@ def generate_launch_description():
     #     executable="task_server.py",
     # )
     alexa_interface_node = Node(
-        package="arduinobot_remote",
+        package="articubot_remote",
         executable="alexa_interface.py",
     )
 

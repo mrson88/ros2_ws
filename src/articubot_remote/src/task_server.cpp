@@ -12,7 +12,7 @@
 
 using namespace std::placeholders;
 
-namespace arduinobot_remote
+namespace articubot_remote
 {
 class TaskServer : public rclcpp::Node
 {
@@ -73,17 +73,17 @@ private:
     if (goal_handle->get_goal()->task_number == 0)
     {
       arm_joint_goal = {0.0, -1.2, -1.2,-1.2, 0.0};
-      gripper_joint_goal = {-0.0, 0.0};
+      gripper_joint_goal = {-0.7, 0.7};
     }
-    else if (goal_handle->get_goal()->task_number == 1)
+    else if (goal_handle->get_goal()->task_number == 1) 
     {
       arm_joint_goal = {0.0, 0.0, 0.0, 0.0, 0.0};
-      gripper_joint_goal = {-0.5, 0.5};
+      gripper_joint_goal = {-0.0, 0.0};
     }
     else if (goal_handle->get_goal()->task_number == 2)
     {
       arm_joint_goal = {0.5, -1.2, -1.2,-1.2, 0.5};
-      gripper_joint_goal = {-0.9, 0.9};
+      gripper_joint_goal = {-0.5, 0.5};
     }
     else
     {
@@ -122,6 +122,6 @@ private:
     RCLCPP_INFO(get_logger(), "Goal succeeded");
   }
 };
-}  // namespace arduinobot_remote
+}  // namespace articubot_remote
 
-RCLCPP_COMPONENTS_REGISTER_NODE(arduinobot_remote::TaskServer)
+RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)

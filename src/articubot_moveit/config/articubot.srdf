@@ -16,7 +16,7 @@
         <joint name="forearm_hand_2_joint"/>
         <joint name="forearm_hand_3_joint"/>
         <joint name="forearm_claw_joint"/>
-        <!-- <joint name="gripper_joint"/> -->
+
     </group>
     <group name="gripper">
         <joint name="joint_4"/>
@@ -35,7 +35,7 @@
         <joint name="forearm_hand_2_joint" value="-1.2"/>
         <joint name="forearm_hand_3_joint" value="-1.2"/>
         <joint name="forearm_claw_joint" value="0"/>
-        <!-- <joint name="gripper_joint" /> -->
+
     </group_state>
     <group_state name="home" group="gripper">
         <joint name="joint_4" value="0"/>

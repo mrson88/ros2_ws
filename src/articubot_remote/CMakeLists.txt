@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(arduinobot_remote)
+project(articubot_remote)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -27,7 +27,7 @@ ament_target_dependencies(task_server
   "rclcpp_components"
   "moveit_ros_planning_interface")
 rclcpp_components_register_node(task_server 
-  PLUGIN "arduinobot_remote::TaskServer" 
+  PLUGIN "articubot_remote::TaskServer" 
   EXECUTABLE task_server_node
 )
 
