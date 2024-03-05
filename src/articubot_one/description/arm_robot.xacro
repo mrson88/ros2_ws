@@ -164,11 +164,11 @@
                                 xyz="0 0 ${hand_length / 2.0}" rpy="0 0 0" />
     </link>
 
-    <!-- <joint name="mobile_base_arm_joint" type="fixed">
+    <joint name="mobile_base_arm_joint" type="fixed">
         <parent link="chassis" />
         <child link="arm_base_link" />
         <origin xyz="${8*chassis_length / 9.0} 0 ${chassis_height}" rpy="0 0 0" />
-    </joint> -->
+    </joint>
 
     <joint name="arm_base_forearm_joint" type="revolute">
         <parent link="arm_base_link" />

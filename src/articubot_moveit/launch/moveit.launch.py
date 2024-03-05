@@ -4,6 +4,10 @@ import xacro
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from ament_index_python import get_package_share_directory
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, ThisLaunchFileDir
+from launch.conditions import IfCondition
 
 def get_package_file(package, file_path):
     """Get the location of a file installed in an ament package"""
@@ -37,6 +41,7 @@ def run_xacro(xacro_file):
 
 
 def generate_launch_description():
+    declared_arguments = []
     xacro_file = get_package_file('articubot_one', 'description/robot.urdf.xacro')
     urdf_file = run_xacro(xacro_file)
     srdf_file = get_package_file('articubot_moveit', 'config/articubot.srdf')
@@ -48,6 +53,20 @@ def generate_launch_description():
     robot_description_semantic = load_file(srdf_file)
     kinematics_config = load_yaml(kinematics_file)
     ompl_config = load_yaml(ompl_config_file)
+
+    ompl_planning_pipeline_config = {
+        "ompl": {
+            "planning_plugin": "ompl_interface/OMPLPlanner",
+            "request_adapters": """default_planner_request_adapters/AddTimeOptimalParameterization default_planner_request_adapters/FixWorkspaceBounds default_planner_request_adapters/FixStartStateBounds default_planner_request_adapters/FixStartStateCollision default_planner_request_adapters/FixStartStatePathConstraints""",
+            "start_state_max_bounds_error": 0.1,
+        }
+    }
+
+    ompl_planning_pipeline_config["ompl"].update(ompl_config)
+    moveit_cpp_pnp_yaml_file_name = (
+        get_package_share_directory("articubot_core") + "/config/moveit_cpp_pnp.yaml"
+    )
+
     moveit_controllers = {
         'moveit_simple_controller_manager' : load_yaml(moveit_controllers_file),
         'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager'
@@ -135,82 +154,76 @@ def generate_launch_description():
             ],
             # condition=IfCondition(use_pnp)
         )
+    
+    # declared_arguments.append(
+    #     DeclareLaunchArgument(
+    #         "use_pnp",
+    #         default_value="true",
+    #         description="Start pnp server if it is required.",
+    #     )
+    # ) 
+    # use_pnp = LaunchConfiguration("use_pnp")
+
+
+    arm_pnp_as_pnp = Node(
+            name='innobot_node',
+            package='articubot_core',
+            executable='innobot_node',
+            output='screen',
+            parameters=[
+                {
+                    'base_frame': 'world',
+                    'robot_description_semantic': robot_description_semantic,
+                    'robot_description_kinematics': kinematics_config,
+                    # 'robot_description_planning' : joint_limits_config,
+                    'planning_pipelines': ['ompl'],
+                    'ompl': ompl_config,
+                    'robot_description': robot_description,
+                },
+                # moveit_cpp_config,
+                # ompl_planning_pipeline_config,
+                
+                # moveit_cpp_pnp_yaml_file_name,
+                moveit_controllers,
+                trajectory_execution,
+                planning_scene_monitor_config,
+            ],
+            # condition=IfCondition(use_pnp)
+        )
+    
+    arm_pnp_as_pnp_1 = Node(
+            name='innobot_node_1',
+            package='articubot_remote',
+            executable='pick_n_place_node',
+            output='screen',
+            parameters=[
+                {
+                    'base_frame': 'world',
+                    'robot_description_semantic': robot_description_semantic,
+                    'robot_description_kinematics': kinematics_config,
+                    # 'robot_description_planning' : joint_limits_config,
+                    'planning_pipelines': ['ompl'],
+                    'ompl': ompl_config,
+                    'robot_description': robot_description,
+                },
+                # moveit_cpp_config,
+                # ompl_planning_pipeline_config,
+                
+                # moveit_cpp_pnp_yaml_file_name,
+                moveit_controllers,
+                trajectory_execution,
+                planning_scene_monitor_config,
+            ],
+            # condition=IfCondition(use_pnp)
+        )
+
     return LaunchDescription([
         move_group_node,
         rviz,
-        arm_pnp_as
+        arm_pnp_as,
+        # arm_pnp_as_pnp,
+        # arm_pnp_as_pnp_1,
+        
         ]
 
     )
-
-
-# --------------------------------
-
-# import os
-# from launch import LaunchDescription
-# from moveit_configs_utils import MoveItConfigsBuilder
-# from launch_ros.actions import Node
-# from launch.actions import DeclareLaunchArgument
-# from launch.substitutions import LaunchConfiguration
-# from ament_index_python.packages import get_package_share_directory
-
-
-# def generate_launch_description():
-
-#     is_sim = LaunchConfiguration('is_sim')
-    
-#     is_sim_arg = DeclareLaunchArgument(
-#         'is_sim',
-#         default_value='True'
-#     )
-
-#     moveit_config = (
-#         MoveItConfigsBuilder("robot", package_name="arduinobot_moveit")
-#         .robot_description(file_path=os.path.join(
-#             get_package_share_directory("articubot_one"),
-#             "urdf",
-#             "robot.urdf.xacro"
-#             )
-#         )
-#         .robot_description_semantic(file_path="config/articubot.srdf")
-#         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-#         .to_moveit_configs()
-#     )
-
-#     move_group_node = Node(
-#         package="moveit_ros_move_group",
-#         executable="move_group",
-#         output="screen",
-#         parameters=[moveit_config.to_dict(), 
-#                     {'use_sim_time': is_sim},
-#                     {'publish_robot_description_semantic': True}],
-#         arguments=["--ros-args", "--log-level", "info"],
-#     )
-
-#     # RViz
-#     rviz_config = os.path.join(
-#         get_package_share_directory("articubot_moveit"),
-#             "config",
-#             "moveit1.rviz",
-#     )
-#     rviz_node = Node(
-#         package="rviz2",
-#         executable="rviz2",
-#         name="rviz2",
-#         output="log",
-#         arguments=["-d", rviz_config],
-#         parameters=[
-#             moveit_config.robot_description,
-#             moveit_config.robot_description_semantic,
-#             moveit_config.robot_description_kinematics,
-#             moveit_config.joint_limits,
-#         ],
-#     )
-
-#     return LaunchDescription(
-#         [
-#             is_sim_arg,
-#             move_group_node, 
-#             rviz_node
-#         ]
-#     )

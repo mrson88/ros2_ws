@@ -1,124 +1,320 @@
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <rclcpp_components/register_node_macro.hpp>
-#include "arduinobot_msgs/action/arduinobot_task.hpp"
-#include <moveit/move_group_interface/move_group_interface.h>
-
 #include <memory>
+// MoveitCpp
+#include <moveit/moveit_cpp/moveit_cpp.h>
+#include <moveit/moveit_cpp/planning_component.h>
 
+#include <geometry_msgs/msg/point_stamped.h>
 
-using namespace std::placeholders;
+#include <moveit_visual_tools/moveit_visual_tools.h>
 
-namespace arduinobot_remote
+namespace rvt = rviz_visual_tools;
+
+// All source files that use ROS logging should define a file-specific
+// static const rclcpp::Logger named LOGGER, located at the top of the file
+// and inside the namespace with the narrowest scope (if there is one)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_cpp_tutorial");
+
+int main(int argc, char** argv)
 {
-class MoveRobotActionServer : public rclcpp::Node
-{
-public:
-  explicit MoveRobotActionServer(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
-    : Node("moveit_action_server", options)
+  rclcpp::init(argc, argv);
+  rclcpp::NodeOptions node_options;
+  RCLCPP_INFO(LOGGER, "Initialize node");
+
+  // This enables loading undeclared parameters
+  // best practice would be to declare parameters in the corresponding classes
+  // and provide descriptions about expected use
+  node_options.automatically_declare_parameters_from_overrides(true);
+  rclcpp::Node::SharedPtr node = rclcpp::Node::make_shared("run_moveit_cpp", "", node_options);
+
+  // We spin up a SingleThreadedExecutor for the current state monitor to get information
+  // about the robot's state.
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(node);
+  std::thread([&executor]() { executor.spin(); }).detach();
+
+  // BEGIN_TUTORIAL
+  //
+  // Setup
+  // ^^^^^
+  //
+  static const std::string PLANNING_GROUP = "panda_arm";
+  static const std::string LOGNAME = "moveit_cpp_tutorial";
+  // ros2_controllers
+  static const std::vector<std::string> CONTROLLERS(1, "panda_arm_controller");
+
+  /* Otherwise robot with zeros joint_states */
+  rclcpp::sleep_for(std::chrono::seconds(1));
+
+  RCLCPP_INFO(LOGGER, "Starting MoveIt Tutorials...");
+
+  auto moveit_cpp_ptr = std::make_shared<moveit_cpp::MoveItCpp>(node);
+  moveit_cpp_ptr->getPlanningSceneMonitorNonConst()->providePlanningSceneService();
+
+  auto planning_components = std::make_shared<moveit_cpp::PlanningComponent>(PLANNING_GROUP, moveit_cpp_ptr);
+  auto robot_model_ptr = moveit_cpp_ptr->getRobotModel();
+  auto robot_start_state = planning_components->getStartState();
+  auto joint_model_group_ptr = robot_model_ptr->getJointModelGroup(PLANNING_GROUP);
+
+  // Visualization
+  // ^^^^^^^^^^^^^
+  //
+  // The package MoveItVisualTools provides many capabilities for visualizing objects, robots,
+  // and trajectories in RViz as well as debugging tools such as step-by-step introspection of a script
+  moveit_visual_tools::MoveItVisualTools visual_tools(node, "panda_link0", "moveit_cpp_tutorial",
+                                                      moveit_cpp_ptr->getPlanningSceneMonitorNonConst());
+  visual_tools.deleteAllMarkers();
+  visual_tools.loadRemoteControl();
+
+  Eigen::Isometry3d text_pose = Eigen::Isometry3d::Identity();
+  text_pose.translation().z() = 1.75;
+  visual_tools.publishText(text_pose, "MoveItCpp_Demo", rvt::WHITE, rvt::XLARGE);
+  visual_tools.trigger();
+
+  // Start the demo
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to start the demo");
+
+  // Planning with MoveItCpp
+  // ^^^^^^^^^^^^^^^^^^^^^^^
+  // There are multiple ways to set the start and the goal states of the plan
+  // they are illustrated in the following plan examples
+  //
+  // Plan #1
+  // ^^^^^^^
+  //
+  // We can set the start state of the plan to the current state of the robot
+  planning_components->setStartStateToCurrentState();
+
+  // The first way to set the goal of the plan is by using geometry_msgs::PoseStamped ROS message type as follow
+  geometry_msgs::msg::PoseStamped target_pose1;
+  target_pose1.header.frame_id = "panda_link0";
+  target_pose1.pose.orientation.w = 1.0;
+  target_pose1.pose.position.x = 0.28;
+  target_pose1.pose.position.y = -0.2;
+  target_pose1.pose.position.z = 0.5;
+  planning_components->setGoal(target_pose1, "panda_link8");
+
+  // Now, we call the PlanningComponents to compute the plan and visualize it.
+  // Note that we are just planning
+  const planning_interface::MotionPlanResponse plan_solution1 = planning_components->plan();
+
+  // Check if PlanningComponents succeeded in finding the plan
+  if (plan_solution1)
   {
-    RCLCPP_INFO(get_logger(), "Starting the Server");
-    action_server_ = rclcpp_action::create_server<arduinobot_msgs::action::ArduinobotTask>(
-        this, "moveit_action_server", std::bind(&MoveRobotActionServer::goalCallback, this, _1, _2),
-        std::bind(&MoveRobotActionServer::cancelCallback, this, _1),
-        std::bind(&MoveRobotActionServer::acceptedCallback, this, _1));
+    // Visualize the start pose in Rviz
+    visual_tools.publishAxisLabeled(robot_start_state->getGlobalLinkTransform("panda_link8"), "start_pose");
+    // Visualize the goal pose in Rviz
+    visual_tools.publishAxisLabeled(target_pose1.pose, "target_pose");
+    visual_tools.publishText(text_pose, "setStartStateToCurrentState", rvt::WHITE, rvt::XLARGE);
+    // Visualize the trajectory in Rviz
+    visual_tools.publishTrajectoryLine(plan_solution1.trajectory, joint_model_group_ptr);
+    visual_tools.trigger();
+
+    /* Uncomment if you want to execute the plan */
+    /* bool blocking = true; */
+    /* moveit_controller_manager::ExecutionStatus result = moveit_cpp_ptr->execute(plan_solution1.trajectory, blocking, CONTROLLERS); */
   }
 
-private:
-  rclcpp_action::Server<arduinobot_msgs::action::ArduinobotTask>::SharedPtr action_server_;
+  // Plan #1 visualization:
+  //
+  // .. image:: images/moveitcpp_plan1.png
+  //    :width: 250pt
+  //    :align: center
+  //
+  // Start the next plan
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
+  visual_tools.deleteAllMarkers();
+  visual_tools.trigger();
 
-  rclcpp_action::GoalResponse goalCallback(
-      const rclcpp_action::GoalUUID& uuid,
-      std::shared_ptr<const arduinobot_msgs::action::ArduinobotTask::Goal> goal)
+  // Plan #2
+  // ^^^^^^^
+  //
+  // Here we will set the current state of the plan using
+  // moveit::core::RobotState
+  auto start_state = *(moveit_cpp_ptr->getCurrentState());
+  geometry_msgs::msg::Pose start_pose;
+  start_pose.orientation.w = 1.0;
+  start_pose.position.x = 0.55;
+  start_pose.position.y = 0.0;
+  start_pose.position.z = 0.6;
+
+  start_state.setFromIK(joint_model_group_ptr, start_pose);
+
+  planning_components->setStartState(start_state);
+
+  // We will reuse the old goal that we had and plan to it.
+  auto plan_solution2 = planning_components->plan();
+  if (plan_solution2)
   {
-    RCLCPP_INFO(get_logger(), "Received goal request with id %d", goal->task_number);
-    (void)uuid;
-    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+    moveit::core::RobotState robot_state(robot_model_ptr);
+    moveit::core::robotStateMsgToRobotState(plan_solution2.start_state, robot_state);
+
+    visual_tools.publishAxisLabeled(robot_state.getGlobalLinkTransform("panda_link8"), "start_pose");
+    visual_tools.publishAxisLabeled(target_pose1.pose, "target_pose");
+    visual_tools.publishText(text_pose, "moveit::core::RobotState_Start_State", rvt::WHITE, rvt::XLARGE);
+    visual_tools.publishTrajectoryLine(plan_solution2.trajectory, joint_model_group_ptr);
+    visual_tools.trigger();
+
+    /* Uncomment if you want to execute the plan */
+    /* bool blocking = true; */
+    /* moveit_cpp_ptr->execute(plan_solution2.trajectory, blocking, CONTROLLERS); */
   }
 
-  rclcpp_action::CancelResponse cancelCallback(
-      const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  // Plan #2 visualization:
+  //
+  // .. image:: images/moveitcpp_plan2.png
+  //    :width: 250pt
+  //    :align: center
+  //
+  // Start the next plan
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
+  visual_tools.deleteAllMarkers();
+  visual_tools.trigger();
+
+  // Plan #3
+  // ^^^^^^^
+  //
+  // We can also set the goal of the plan using
+  // moveit::core::RobotState
+  auto target_state = *robot_start_state;
+  geometry_msgs::msg::Pose target_pose2;
+  target_pose2.orientation.w = 1.0;
+  target_pose2.position.x = 0.55;
+  target_pose2.position.y = -0.05;
+  target_pose2.position.z = 0.8;
+
+  target_state.setFromIK(joint_model_group_ptr, target_pose2);
+
+  planning_components->setGoal(target_state);
+
+  // We will reuse the old start that we had and plan from it.
+  auto plan_solution3 = planning_components->plan();
+  if (plan_solution3)
   {
-    (void)goal_handle;
-    RCLCPP_INFO(get_logger(), "Received request to cancel goal");
-    auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm");
-    auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
-    arm_move_group.stop();
-    gripper_move_group.stop();
-    return rclcpp_action::CancelResponse::ACCEPT;
+    moveit::core::RobotState robot_state(robot_model_ptr);
+    moveit::core::robotStateMsgToRobotState(plan_solution3.start_state, robot_state);
+
+    visual_tools.publishAxisLabeled(robot_state.getGlobalLinkTransform("panda_link8"), "start_pose");
+    visual_tools.publishAxisLabeled(target_pose2, "target_pose");
+    visual_tools.publishText(text_pose, "moveit::core::RobotState_Goal_Pose", rvt::WHITE, rvt::XLARGE);
+    visual_tools.publishTrajectoryLine(plan_solution3.trajectory, joint_model_group_ptr);
+    visual_tools.trigger();
+
+    /* Uncomment if you want to execute the plan */
+    /* bool blocking = true; */
+    /* moveit_cpp_ptr->execute(plan_solution3.trajectory, blocking, CONTROLLERS); */
   }
 
-  void acceptedCallback(
-      const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  // Plan #3 visualization:
+  //
+  // .. image:: images/moveitcpp_plan3.png
+  //    :width: 250pt
+  //    :align: center
+  //
+  // Start the next plan
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
+  visual_tools.deleteAllMarkers();
+  visual_tools.trigger();
+
+  // Plan #4
+  // ^^^^^^^
+  //
+  // We can set the start state of the plan to the current state of the robot
+  // We can set the goal of the plan using the name of a group states
+  // for panda robot we have one named robot state for "panda_arm" planning group called "ready"
+  // see `panda_arm.xacro
+  // <https://github.com/ros-planning/moveit_resources/blob/ros2/panda_moveit_config/config/panda_arm.xacro#L13>`_
+
+  /* // Set the start state of the plan from a named robot state */
+  /* planning_components->setStartState("ready"); // Not implemented yet */
+  // Set the goal state of the plan from a named robot state
+  planning_components->setGoal("ready");
+
+  // Again we will reuse the old start that we had and plan from it.
+  auto plan_solution4 = planning_components->plan();
+  if (plan_solution4)
   {
-    // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{ std::bind(&MoveRobotActionServer::execute, this, _1), goal_handle }.detach();
+    moveit::core::RobotState robot_state(robot_model_ptr);
+    moveit::core::robotStateMsgToRobotState(plan_solution4.start_state, robot_state);
+
+    visual_tools.publishAxisLabeled(robot_state.getGlobalLinkTransform("panda_link8"), "start_pose");
+    visual_tools.publishAxisLabeled(robot_start_state->getGlobalLinkTransform("panda_link8"), "target_pose");
+    visual_tools.publishText(text_pose, "Goal_Pose_From_Named_State", rvt::WHITE, rvt::XLARGE);
+    visual_tools.publishTrajectoryLine(plan_solution4.trajectory, joint_model_group_ptr);
+    visual_tools.trigger();
+
+    /* Uncomment if you want to execute the plan */
+    /* bool blocking = true; */
+    /* moveit_cpp_ptr->execute(plan_solution4.trajectory, blocking, CONTROLLERS); */
   }
 
-  void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
+  // Plan #4 visualization:
+  //
+  // .. image:: images/moveitcpp_plan4.png
+  //    :width: 250pt
+  //    :align: center
+  //
+  // Start the next plan
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
+  visual_tools.deleteAllMarkers();
+  visual_tools.trigger();
+
+  // Plan #5
+  // ^^^^^^^
+  //
+  // We can also generate motion plans around objects in the collision scene.
+  //
+  // First we create the collision object
+  moveit_msgs::msg::CollisionObject collision_object;
+  collision_object.header.frame_id = "panda_link0";
+  collision_object.id = "box";
+
+  shape_msgs::msg::SolidPrimitive box;
+  box.type = box.BOX;
+  box.dimensions = { 0.1, 0.4, 0.1 };
+
+  geometry_msgs::msg::Pose box_pose;
+  box_pose.position.x = 0.4;
+  box_pose.position.y = 0.0;
+  box_pose.position.z = 1.0;
+
+  collision_object.primitives.push_back(box);
+  collision_object.primitive_poses.push_back(box_pose);
+  collision_object.operation = collision_object.ADD;
+
+  // Add object to planning scene
+  {  // Lock PlanningScene
+    planning_scene_monitor::LockedPlanningSceneRW scene(moveit_cpp_ptr->getPlanningSceneMonitorNonConst());
+    scene->processCollisionObjectMsg(collision_object);
+  }  // Unlock PlanningScene
+  planning_components->setStartStateToCurrentState();
+  planning_components->setGoal("extended");
+
+  auto plan_solution5 = planning_components->plan();
+  if (plan_solution5)
   {
-    RCLCPP_INFO(get_logger(), "Executing goal");
-    auto result = std::make_shared<arduinobot_msgs::action::ArduinobotTask::Result>();
+    visual_tools.publishText(text_pose, "Planning_Around_Collision_Object", rvt::WHITE, rvt::XLARGE);
+    visual_tools.publishTrajectoryLine(plan_solution5.trajectory, joint_model_group_ptr);
+    visual_tools.trigger();
 
-    // MoveIt 2 Interface
-    auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm");
-    auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
-
-    std::vector<double> arm_joint_goal;
-    std::vector<double> gripper_joint_goal;
-
-    if (goal_handle->get_goal()->task_number == 0)
-    {
-      arm_joint_goal = {0.0, 0.0, 0.0,0,0};
-      gripper_joint_goal = {-0.7, 0.7};
-    }
-    else if (goal_handle->get_goal()->task_number == 1)
-    {
-      arm_joint_goal = {0, -1.2,-1.2,-1.2, 0};
-      gripper_joint_goal = {0.0, 0.0};
-    }
-    else if (goal_handle->get_goal()->task_number == 2)
-    {
-      arm_joint_goal = {-0.5,-1.2,-1.2,-1.2, 1};
-      gripper_joint_goal = {0.0, 0.0};
-    }
-    else
-    {
-      RCLCPP_ERROR(get_logger(), "Invalid Task Number");
-      return;
-    }
-
-    bool arm_within_bounds = arm_move_group.setJointValueTarget(arm_joint_goal);
-    bool gripper_within_bounds = gripper_move_group.setJointValueTarget(gripper_joint_goal);
-    if (!arm_within_bounds | !gripper_within_bounds)
-    {
-      RCLCPP_WARN(get_logger(),
-                  "Target joint position(s) were outside of limits, but we will plan and clamp to the limits ");
-      return;
-    }
-
-    moveit::planning_interface::MoveGroupInterface::Plan arm_plan;
-    moveit::planning_interface::MoveGroupInterface::Plan gripper_plan;
-    bool arm_plan_success = (arm_move_group.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-    bool gripper_plan_success = (gripper_move_group.plan(gripper_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-    
-    if(arm_plan_success && gripper_plan_success)
-    {
-      RCLCPP_INFO(get_logger(), "Planner SUCCEED, moving the arme and the gripper");
-      arm_move_group.move();
-      gripper_move_group.move();
-    }
-    else
-    {
-      RCLCPP_ERROR(get_logger(), "One or more planners failed!");
-      return;
-    }
-  
-    result->success = true;
-    goal_handle->succeed(result);
-    RCLCPP_INFO(get_logger(), "Goal succeeded");
+    /* Uncomment if you want to execute the plan */
+    /* bool blocking = true; */
+    /* moveit_cpp_ptr->execute(plan_solution5.trajectory, blocking, CONTROLLERS); */
   }
-};
-}  // namespace arduinobot_remote
 
-RCLCPP_COMPONENTS_REGISTER_NODE(arduinobot_remote::MoveRobotActionServer)
+  // Plan #5 visualization:
+  //
+  // .. image:: images/moveitcpp_plan5.png
+  //    :width: 250pt
+  //    :align: center
+  //
+  // END_TUTORIAL
+  visual_tools.prompt("Press 'next' to end the demo");
+  visual_tools.deleteAllMarkers();
+  visual_tools.trigger();
+
+  RCLCPP_INFO(LOGGER, "Shutting down.");
+  rclcpp::shutdown();
+  return 0;
+}

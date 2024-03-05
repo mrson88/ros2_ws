@@ -7,7 +7,7 @@
     <xacro:include filename="robot_core.xacro" />
     <xacro:include filename="arm_robot.xacro" />
     <xacro:include filename="inertial_macros.xacro" />
-    <xacro:include filename="camera.xacro" />
+    <!-- <xacro:include filename="camera.xacro" /> -->
     <xacro:if value="$(arg use_ros2_control)">
         <xacro:include filename="ros2_control.xacro" />
     </xacro:if>
@@ -17,12 +17,12 @@
     <xacro:include filename="lidar.xacro" />
 
 
-    <!-- <xacro:include filename="depth_camera.xacro" /> -->
+    <xacro:include filename="depth_camera.xacro" />
 
     <xacro:include filename="face.xacro" />
-    <joint name="mobile_base_arm_joint" type="fixed">
+    <!-- <joint name="mobile_base_arm_joint" type="fixed">
         <parent link="chassis" />
         <child link="arm_base_link" />
         <origin xyz="${8*chassis_length / 9.0} 0 ${chassis_height}" rpy="0 0 0" />
-    </joint>
+    </joint> -->
 </robot>
