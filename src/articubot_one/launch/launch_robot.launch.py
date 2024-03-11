@@ -189,7 +189,6 @@ def generate_launch_description():
         # joystick,
         moveit,
         # ldlidar_node,
-        # camera_realsense_node,
         # rviz,
         twist_mux,
         delayed_controller_manager,
@@ -199,6 +198,7 @@ def generate_launch_description():
         delayed_gripper_spawner,
         # slam_toolbox,
         # navigation_robot,
-        # articubot_recognition,
+        camera_realsense_node,
+        articubot_recognition,
  
     ])

@@ -106,5 +106,14 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(pick_and_place_node src/pick_and_place_node.cpp)
+ament_target_dependencies(pick_and_place_node rclcpp moveit_ros_planning_interface)
+
+install(TARGETS
+  pick_and_place_node
+  DESTINATION lib/${PROJECT_NAME})
+
+
+
 ament_package()
 
