@@ -21,6 +21,8 @@ find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+# ...
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -38,17 +40,44 @@ install(
   DIRECTORY
     scripts
     launch
+    data
+    scripts/model
+    scripts/Model
+    scripts/utils
+    scripts/Facerec_QT
+    scripts/MiAI_MobileNetSSD_Pi
   DESTINATION
     share/${PROJECT_NAME}/
 )
-
+install(
+  DIRECTORY
+  scripts/Facerec_QT
+  DESTINATION
+    lib/${PROJECT_NAME}/
+)
 install(
   PROGRAMS
   scripts/yolov8_ros2_pt.py
   scripts/yolov8_ros2_subscriber.py
   scripts/yolo_ros2_depth_test.py
+  scripts/app.py
+  scripts/tflite_reg.py
+  # scripts/Facerec_QT/face_rec.py
+  # scripts/utils/cvfpscalc.py
+  # scripts/model/keypoint_classifier/keypoint_classifier.py
+  # scripts/model/point_history_classifier/point_history_classifier.py
   launch/launch_yolov8.launch.py
   DESTINATION lib/${PROJECT_NAME}
 )
-
+install(
+  PROGRAMS
+  scripts/utils/cvfpscalc.py
+  DESTINATION lib/${PROJECT_NAME}/utils
+)
+install(
+  PROGRAMS
+  scripts/model/keypoint_classifier/keypoint_classifier.py
+  scripts/model/point_history_classifier/point_history_classifier.py
+  DESTINATION lib/${PROJECT_NAME}/model
+)
 ament_package()

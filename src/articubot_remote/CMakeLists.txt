@@ -87,13 +87,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# install(TARGETS 
-# pick_n_place
-#   ARCHIVE DESTINATION lib
-#   LIBRARY DESTINATION lib
-#   RUNTIME DESTINATION bin
-#   DESTINATION lib/${PROJECT_NAME}
-# )
+
 
 
 install(PROGRAMS
@@ -103,6 +97,7 @@ install(PROGRAMS
   ${PROJECT_NAME}/fibonacci_action_client.py
   ${PROJECT_NAME}/fibonacci_action_server.py
   ${PROJECT_NAME}/pnp_client.py
+  ${PROJECT_NAME}/move_to_point_action_server.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

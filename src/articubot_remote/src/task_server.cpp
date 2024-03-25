@@ -230,11 +230,11 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 //       effector_pose_target.header.frame_id = "world";
 //       effector_pose_target.pose.position.x = 0.5;
 //       effector_pose_target.pose.position.y = 0.0;
-//       effector_pose_target.pose.position.z = 0.5;
+//       // effector_pose_target.pose.position.z = 0.5;
 //       // effector_pose_target.pose.orientation.x = 0.464625;
 //       // effector_pose_target.pose.orientation.y = -0.000000;
 //       // effector_pose_target.pose.orientation.z = 0.724309;
-//       effector_pose_target.pose.orientation.w = 1.0;
+//       // effector_pose_target.pose.orientation.w = 1.0;
 
 
 //     }

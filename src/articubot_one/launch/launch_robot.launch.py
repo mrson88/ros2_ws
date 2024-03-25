@@ -197,8 +197,7 @@ def generate_launch_description():
         delayed_arm_spawner,
         delayed_gripper_spawner,
         # slam_toolbox,
-        # navigation_robot,
         camera_realsense_node,
-        articubot_recognition,
+        # articubot_recognition,
  
     ])

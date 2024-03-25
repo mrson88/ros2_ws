@@ -4,72 +4,63 @@ import numpy as np
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from arduinobot_msgs.action import ArduinobotTask
-from moveit.planning import MoveItPy
-from moveit.core.robot_state import RobotState
-from moveit_python import MoveGroupInterface
-from moveit_msgs.msg import RobotState
-from moveit_py_interface import MoveItPy
-
+# from moveit.planning import MoveItPy
+# from moveit.core.robot_state import RobotState
+# from moveit_python import MoveGroupInterface
+# from moveit_msgs.msg import RobotState
+# from moveit_py_interface import MoveItPy
+from nav2_msgs.action import NavigateToPose
+from arduinobot_msgs.action import MoveToPoint  # Update with your package name
+from geometry_msgs.msg import Point
+import sys
+import time
+from action_msgs.msg import GoalStatus
 
 class TaskServer(Node):
     def __init__(self):
         super().__init__("task_server")
-        self.get_logger().info("Starting the Server")
-        self.action_server = ActionServer(
-            self, ArduinobotTask, "task_server", self.goalCallback
-        )
-
+        self.get_logger().info("Starting the Server Python Task Server")
+        # self.action_server = ActionServer(
+        #     self, ArduinobotTask, "task_server", self.goalCallback
+        # )
+        # self._action_server = ActionServer(
+        #     self,
+        #     MoveToPoint,
+        #     'task_server',
+        #     self.goalCallback)
+        self._action_server = ActionServer(
+            self,
+            NavigateToPose,
+            'task_server',
+            self.execute_callback)     
     def goalCallback(self, goal_handle):
-        self.get_logger().info(
-            "Received goal request with id %d" % goal_handle.request.task_number
-        )
+        feedback_msg = MoveToPoint.Feedback()
+        result = MoveToPoint.Result()
 
-        # MoveIt 2 Interface
-        arduinobot = MoveItPy(node_name="moveit_py")
-        arduinobot_arm = arduinobot.get_planning_component("arm")
-        arduinobot_gripper = arduinobot.get_planning_component("gripper")
+        # Dummy movement logic - replace with actual MoveIt 2 integration
+        target_point = goal_handle.request.target_point
+        self.get_logger().info(f'Moving to point: {target_point.x}, {target_point.y}, {target_point.z}')
 
-        arm_state = RobotState(arduinobot.get_robot_model())
-        gripper_state = RobotState(arduinobot.get_robot_model())
+        # Simulate some operation
+        feedback_msg.distance_to_goal = 1.0  # Update with actual distance
+        self.get_logger().info('Providing feedback...')
+        goal_handle.publish_feedback(feedback_msg)
 
-        arm_joint_goal = []
-        gripper_joint_goal = []
-
-        if goal_handle.request.task_number == 0:
-            arm_joint_goal = np.array([0.0, 0.0, 0.0])
-            gripper_joint_goal = np.array([-0.7, 0.7])
-        elif goal_handle.request.task_number == 1:
-            arm_joint_goal = np.array([-1.14, -0.6, -0.07])
-            gripper_joint_goal = np.array([0.0, 0.0])
-        elif goal_handle.request.task_number == 2:
-            arm_joint_goal = np.array([-1.57,0.0,-0.9])
-            gripper_joint_goal = np.array([0.0, 0.0])
-        else:
-            self.get_logger().error("Invalid Task Number")
-            return
-
-        arm_state.set_joint_group_positions("arm", arm_joint_goal)
-        gripper_state.set_joint_group_positions("gripper", gripper_joint_goal)
-
-        arduinobot_arm.set_goal_state(robot_state=arm_state)
-        arduinobot_gripper.set_goal_state(robot_state=gripper_state)
-
-        arm_plan_result = arduinobot_arm.plan()
-        gripper_plan_result = arduinobot_gripper.plan()
-
-        if arm_plan_result and gripper_plan_result:
-            self.get_logger().info("Planner SUCCEED, moving the arme and the gripper")
-            arduinobot.execute(arm_plan_result.trajectory, controllers=[])
-            arduinobot.execute(gripper_plan_result.trajectory, controllers=[])
-        else:
-            self.get_logger().info("One or more planners failed!")
-        
-        self.get_logger().info("Goal succeeded")
-        goal_handle.succeed()
-        result = ArduinobotTask.Result()
+        # Assume success for simplicity
         result.success = True
-        return result 
+        self.get_logger().info('Returning result...')
+        return result
+    def execute_callback(self, goal_handle):
+        self.get_logger().info('Navigating to pose...')
 
+        # Simulate navigation
+        time.sleep(15)  # Simulate some operation that takes time
+        
+        goal_handle.succeed()
+
+        result = NavigateToPose.Result()
+        result.result = GoalStatus.STATUS_SUCCEEDED
+        return result
 
 def main(args=None):
     rclpy.init(args=args)

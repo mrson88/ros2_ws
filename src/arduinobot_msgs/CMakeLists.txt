@@ -24,6 +24,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "action/Pnp.action"
   "action/Home.action"
   "action/Move.action"
+  "action/MoveToPoint.action"
   "msg/InferenceResult.msg"
   "msg/Yolov8Inference.msg"
   DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
