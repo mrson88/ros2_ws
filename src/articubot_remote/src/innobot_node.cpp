@@ -27,8 +27,8 @@
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include "innobot_msgs/action/move.hpp"
-#include "innobot_msgs/action/pnp.hpp"
+#include "arduinobot_msgs/action/move.hpp"
+#include "arduinobot_msgs/action/pnp.hpp"
 
 #define ROUNDING_PRECISION 1
 
@@ -38,7 +38,7 @@ class PickNPlace : public rclcpp::Node
 {
 public:
 
-  using Pnp = innobot_msgs::action::Pnp; 
+  using Pnp = arduinobot_msgs::action::Pnp; 
   using GoalHandlePnp = rclcpp_action::ServerGoalHandle<Pnp>;
 
   using GripperCommand = control_msgs::action::GripperCommand;
@@ -51,7 +51,7 @@ public:
 
     if (! this->has_parameter("base_frame"))
     {
-      this->declare_parameter("base_frame", "world");
+      this->declare_parameter("base_frame", "odom");
     }
 
     // RCLCPP_DEBUG(this->get_logger(), "Initializing moveit_cpp_");
@@ -177,7 +177,7 @@ private:
 
     std::vector<double> joint_values;
 
-    desired_robot_state->copyJointGroupPositions("arm", joint_values);
+    desired_robot_state->copyJointGroupPositions("arm_robot", joint_values);
 
     for(std::size_t i = 0; i < joint_values.size(); i++){
 
@@ -266,7 +266,7 @@ private:
       std::vector<double> orientation_tolerances(3, 0.01f);
 
       geometry_msgs::msg::PoseStamped goal_pose;
-      goal_pose.header.frame_id = "world";
+      goal_pose.header.frame_id = "odom";
       goal_pose.pose = poses[i];
 
       moveit_msgs::msg::Constraints robot_goal = kinematic_constraints::constructGoalConstraints(
@@ -310,7 +310,7 @@ private:
       // planning_components->execute(false);
 
       // Executes the given trajectory 
-      success = moveit_cpp_ptr->execute("arm", plan_solution.trajectory, false);
+      success = moveit_cpp_ptr->execute("arm_robot", plan_solution.trajectory, false);
 
       bool pose_success = false; 
 
@@ -354,7 +354,7 @@ private:
     RCLCPP_DEBUG(this->get_logger(), "Initializing planning_components");
 
     // Planning component associated with a single motion group
-    auto planning_components = std::make_shared<moveit_cpp::PlanningComponent>("arm", moveit_cpp_ptr);
+    auto planning_components = std::make_shared<moveit_cpp::PlanningComponent>("arm_robot", moveit_cpp_ptr);
 
     // Parameters set on this node
     // this->plan_parameters_.load(this->shared_from_this());

@@ -188,7 +188,7 @@ def generate_launch_description():
         # joint_state_publisher_gui_node,
         # joystick,
         moveit,
-        # ldlidar_node,
+        ldlidar_node,
         # rviz,
         twist_mux,
         delayed_controller_manager,

@@ -46,31 +46,31 @@ rclcpp_components_register_node(task_server
   EXECUTABLE task_server_node
 )
 
-add_executable(pick_n_place_node src/pick_n_place_node.cpp)
-ament_target_dependencies(pick_n_place_node rclcpp moveit_msgs moveit_ros_planning_interface arduinobot_msgs rclcpp_action control_msgs)
+# add_executable(pick_n_place_node src/pick_n_place_node.cpp)
+# ament_target_dependencies(pick_n_place_node rclcpp moveit_msgs moveit_ros_planning_interface arduinobot_msgs rclcpp_action control_msgs)
 
 
 # The innobot_node executable
 add_executable(innobot_node src/innobot_node.cpp)
-ament_target_dependencies(innobot_node rclcpp moveit_msgs moveit_ros_planning_interface innobot_msgs rclcpp_action control_msgs)
-# add_library(pick_n_place SHARED src/pick_n_place_node.cpp)
-# target_include_directories(pick_n_place PRIVATE
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>)
-# target_compile_definitions(pick_n_place
-#   PRIVATE "TASK_SERVER_CPP_BUILDING_DLL")
-# ament_target_dependencies(pick_n_place
-#   "arduinobot_msgs"
-#   "rclcpp"
-#   "rclcpp_action"
-#   "rclcpp_components"
-#   "moveit_ros_planning_interface"
-#   "moveit_msgs"
-#   "control_msgs")
-# rclcpp_components_register_node(pick_n_place 
-#   PLUGIN "articubot_remote::PickNPlace" 
-#   EXECUTABLE pick_n_place_node
-# )
+ament_target_dependencies(innobot_node rclcpp moveit_msgs moveit_ros_planning_interface arduinobot_msgs rclcpp_action control_msgs)
+add_library(pick_n_place SHARED src/pick_n_place_node.cpp)
+target_include_directories(pick_n_place PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_definitions(pick_n_place
+  PRIVATE "TASK_SERVER_CPP_BUILDING_DLL")
+ament_target_dependencies(pick_n_place
+  "arduinobot_msgs"
+  "rclcpp"
+  "rclcpp_action"
+  "rclcpp_components"
+  "moveit_ros_planning_interface"
+  "moveit_msgs"
+  "control_msgs")
+rclcpp_components_register_node(pick_n_place 
+  PLUGIN "articubot_remote::PickNPlace" 
+  EXECUTABLE pick_n_place_node
+)
 
 ament_python_install_package(${PROJECT_NAME})
 

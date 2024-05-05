@@ -221,7 +221,7 @@ def generate_launch_description():
         move_group_node,
         rviz,
         arm_pnp_as,
-        # arm_pnp_as_pnp,
+        arm_pnp_as_pnp,
         # arm_pnp_as_pnp_1,
         
         ]

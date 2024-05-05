@@ -1,6 +1,6 @@
 
 
-
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
@@ -50,7 +50,20 @@ private:
     gripper_move_group.stop();
     return rclcpp_action::CancelResponse::ACCEPT;
   }
+  tf2::Transform poseMsgToTransform(const geometry_msgs::msg::Pose& pose_in){
+    
+    // transform pose message from geometry_msgs::msg::Pose to tf2::Transform
+    
+    tf2::Transform t_out; 
+    tf2::Vector3 pos(pose_in.position.x, pose_in.position.y, pose_in.position.z); 
+    t_out.setOrigin(pos);  
+    tf2::Quaternion q;
+    tf2::fromMsg(pose_in.orientation, q);
+    t_out.setRotation(q);
 
+    return t_out; 
+  }
+ 
   void acceptedCallback(
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
   {
@@ -147,10 +160,40 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 
 
 
+// #define BOOST_BIND_NO_PLACEHOLDERS
+// #include <math.h>
+// #include <inttypes.h>
+// #include <functional>
+// #include <memory>
+// #include <thread>
+// #include <iostream>
+
+
+
+// #include "control_msgs/action/gripper_command.hpp"
+// #include <geometry_msgs/msg/pose_stamped.hpp>
+// #include <sensor_msgs/msg/joint_state.hpp>
+// #include <geometry_msgs/msg/pose.hpp>
+// #include <moveit/moveit_cpp/moveit_cpp.h>
+// #include <moveit/moveit_cpp/planning_component.h>
+
+// #include <moveit/move_group_interface/move_group_interface.h>
+// #include <moveit_msgs/msg/planning_scene.hpp>
+
+// #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+// #include <moveit/robot_model_loader/robot_model_loader.h>
+// #include <moveit/robot_state/conversions.h>
+// #include <moveit/kinematic_constraints/utils.h>
+
+// #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+// #include "arduinobot_msgs/action/move.hpp"
+// #include "arduinobot_msgs/action/pnp.hpp"
 
 
 
 
+// #include <geometry_msgs/msg/pose.hpp>
 // #include <rclcpp/rclcpp.hpp>
 // #include <rclcpp_action/rclcpp_action.hpp>
 // #include <rclcpp_components/register_node_macro.hpp>
@@ -158,7 +201,7 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 // #include <moveit/move_group_interface/move_group_interface.h>
 // #include <Eigen/Geometry>
 // #include <memory>
-
+// #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // using namespace std::placeholders;
 
@@ -194,15 +237,29 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 //   {
 //     (void)goal_handle;
 //     RCLCPP_INFO(get_logger(), "Received request to cancel goal");
-//     // auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm_robot");
-//     // auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
-//     auto effector_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "end_effector");
-//     // arm_move_group.stop();
-//     // gripper_move_group.stop();
-//     effector_move_group.stop();
+//     auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm_robot");
+//     auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
+//     // auto effector_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "end_effector");
+//     arm_move_group.stop();
+//     gripper_move_group.stop();
+//     // effector_move_group.stop();
 //     return rclcpp_action::CancelResponse::ACCEPT;
 //   }
+//   // functions for pick and place application 
 
+//   tf2::Transform poseMsgToTransform(const geometry_msgs::msg::Pose& pose_in){
+    
+//     // transform pose message from geometry_msgs::msg::Pose to tf2::Transform
+    
+//     tf2::Transform t_out; 
+//     tf2::Vector3 pos(pose_in.position.x, pose_in.position.y, pose_in.position.z); 
+//     t_out.setOrigin(pos);  
+//     tf2::Quaternion q;
+//     tf2::fromMsg(pose_in.orientation, q);
+//     t_out.setRotation(q);
+
+//     return t_out; 
+//   }
 //   void acceptedCallback(
 //       const std::shared_ptr<rclcpp_action::ServerGoalHandle<arduinobot_msgs::action::ArduinobotTask>> goal_handle)
 //   {
@@ -218,19 +275,27 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 //     // // MoveIt 2 Interface
 //     auto arm_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm_robot");
 //     auto gripper_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "gripper");
-//     auto effector_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "end_effector");
-//     // auto effector_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "arm_robot");
+//     // auto effector_move_group = moveit::planning_interface::MoveGroupInterface(shared_from_this(), "end_effector");
 //     std::vector<double> arm_joint_goal;
 //     std::vector<double> gripper_joint_goal;
-//     // geometry_msgs::msg::PoseStamped arm_pose_target;
-//     // geometry_msgs::msg::PoseStamped gripper_pose_target;
-//     geometry_msgs::msg::PoseStamped effector_pose_target;
+//     geometry_msgs::msg::PoseStamped arm_pose_target;
+//     geometry_msgs::msg::PoseStamped gripper_pose_target;
+//     RCLCPP_INFO(get_logger(), "Reference frame: %s", arm_move_group.getPlanningFrame().c_str());
+//     RCLCPP_INFO(get_logger(), "End effector link: %s", arm_move_group.getEndEffectorLink().c_str());
+//     // geometry_msgs::msg::PoseStamped effector_pose_target;
 //     if (goal_handle->get_goal()->task_number == 0)
 //     {
-//       effector_pose_target.header.frame_id = "world";
-//       effector_pose_target.pose.position.x = 0.5;
-//       effector_pose_target.pose.position.y = 0.0;
+//       arm_pose_target.header.frame_id = "hand_3_link";
+//       tf2::Quaternion orientation;
+//       orientation.setRPY(0, 0, M_PI / 2);
+//       arm_pose_target.pose.orientation = tf2::toMsg(orientation);
+//       // effector_pose_target.pose.position.x = 0.5;
+//       // effector_pose_target.pose.position.y = 0.0;
 //       // effector_pose_target.pose.position.z = 0.5;
+//       arm_pose_target.pose.position.x = 0.3;
+//       arm_pose_target.pose.position.y = 0.4;
+//       arm_pose_target.pose.position.z = 0.75;
+//       // arm_pose_target.pose.orientation.w = 1.0;
 //       // effector_pose_target.pose.orientation.x = 0.464625;
 //       // effector_pose_target.pose.orientation.y = -0.000000;
 //       // effector_pose_target.pose.orientation.z = 0.724309;
@@ -256,8 +321,9 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 
 //     // bool arm_within_bounds = arm_move_group.setJointValueTarget(arm_joint_goal);
 //     // bool gripper_within_bounds = gripper_move_group.setJointValueTarget(gripper_joint_goal);
-//     bool effector_within_bounds = effector_move_group.setPoseTarget(effector_pose_target);
-//     if (!effector_within_bounds )
+//     // bool effector_within_bounds = effector_move_group.setPoseTarget(effector_pose_target);
+//     bool arm_within_bounds = arm_move_group.setPoseTarget(arm_pose_target);
+//     if (!arm_within_bounds )
 //     {
 //       RCLCPP_WARN(get_logger(),
 //                   "Target joint position(s) were outside of limits, but we will plan and clamp to the limits ");
@@ -266,7 +332,7 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 //     // moveit::planning_interface::MoveGroupInterface::Plan arm_plan;
 //     // moveit::planning_interface::MoveGroupInterface::Plan gripper_plan;
 //     moveit::planning_interface::MoveGroupInterface::Plan effector_plan;
-//     bool effector_plan_success = (effector_move_group.plan(effector_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+//     bool effector_plan_success = (arm_move_group.plan(effector_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
 //     RCLCPP_INFO(get_logger(), "Visualizing plan 1 (pose goal) %s", effector_plan_success ? "" : "FAILED");
 
 //     // bool gripper_plan_success = (gripper_move_group.plan(gripper_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -274,13 +340,13 @@ RCLCPP_COMPONENTS_REGISTER_NODE(articubot_remote::TaskServer)
 //     if(effector_plan_success )
 //     {
 //       RCLCPP_INFO(get_logger(), "Planner SUCCEED, moving the arme and the gripper");
-//       effector_move_group.execute(effector_plan);
-//       effector_move_group.move();
+//       arm_move_group.execute(effector_plan);
+//       arm_move_group.move();
 //       result->success = true;
 //       goal_handle->succeed(result);
 //       // gripper_move_group.move();
 //       // arm_move_group.move();
-//       geometry_msgs::msg::PoseStamped end_effector_pose = effector_move_group.getCurrentPose();
+//       geometry_msgs::msg::PoseStamped end_effector_pose = arm_move_group.getCurrentPose();
 //       // geometry_msgs::msg::PoseStamped end_gripper_pose = gripper_move_group.getCurrentPose();
 //             RCLCPP_INFO(get_logger(), "End-arm position: [%f, %f, %f,%f, %f, %f,%f]", 
 //                   end_effector_pose.pose.position.x,
